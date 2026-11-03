@@ -1,0 +1,21 @@
+diff --git a/nordpool_predict_fi.py b/nordpool_predict_fi.py
+index b720542..5a11f54 100644
+--- a/nordpool_predict_fi.py
++++ b/nordpool_predict_fi.py
+@@ -10,7 +10,6 @@ from dotenv import load_dotenv
+ from util.dump import dump_sqlite_db
+ from util.sahkotin import update_spot
+ from util.train_xgb import train_model
+-from util.llm import narrate_prediction
+ from util.entso_e import entso_e_nuclear
+ from util.archive import insert_snapshot
+ from util.holidays import update_holidays
+@@ -385,6 +384,8 @@ elif args.predict:  # Only show this message if predict was run but not committe
+ # -----------------------------------------------------------------------------------------------------------------------------
+ # --narrate: Generate narration
+ if args.narrate:
++    from util.llm import narrate_prediction
++
+     logger.info("* Narrating predictions")
+     narration = narrate_prediction(deploy=args.deploy, commit=args.commit)
+ 

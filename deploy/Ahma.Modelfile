@@ -1,0 +1,11 @@
+FROM hf.co/RichardErkhov/Finnish-NLP_-_Ahma-3B-Instruct-gguf:Q4_K_M
+# Ahma was instruction-tuned with Llama 2 prompts; the imported quant uses ChatML.
+SYSTEM "Olet tekoälyavustaja. Kirjoita sujuvaa suomea. Palauta vain pyydetty teksti ilman johdantoa tai selityksiä."
+TEMPLATE """<s> [INST] {{ if .System }}<<SYS>>
+{{ .System }}
+<</SYS>>
+
+{{ end }}{{ .Prompt }} [/INST] {{ .Response }}"""
+PARAMETER stop "</s>"
+PARAMETER stop "[INST]"
+PARAMETER num_ctx 2048

@@ -1,0 +1,14 @@
+[Unit]
+Description=Generate WattInfo Finnish electricity price forecast
+OnSuccess=wattinfo-narration.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/apps/nordpool-predict-fi
+ExecStart=%h/apps/wattinfo/deploy/run-forecast.sh
+Nice=10
+CPUQuota=150%
+MemoryMax=1800M
+MemorySwapMax=0
+TimeoutStartSec=30min
+UMask=0077

@@ -1,0 +1,10 @@
+[Unit]
+Description=Summarize WattInfo forecast with local Ollama
+ConditionPathExists=%h/apps/wattinfo/selfhosted-forecast.json
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 %h/apps/wattinfo/deploy/narrate-forecast.py
+Nice=10
+TimeoutStartSec=5min
+UMask=0077

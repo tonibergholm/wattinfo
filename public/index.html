@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="fi">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#141916"><meta name="apple-mobile-web-app-capable" content="yes"><title>WattInfo · Pörssisähkö</title><link rel="stylesheet" href="./style.css"></head>
+<body>
+<main>
+<header><a class="brand" href="./" aria-label="WattInfo etusivu"><span class="mark">ϟ</span> wattinfo<span class="brand-dot">.</span></a><div class="clock"><span id="date"></span><strong id="clock">--:--</strong></div></header>
+<div class="topline"><span>PÖRSSISÄHKÖ <span class="muted">/ SUOMI</span></span><span id="status" role="status">Haetaan hintoja…</span></div>
+<section class="overview" aria-label="Nykyinen sähkön hinta">
+<div class="current"><div class="eyebrow">HINTA NYT <span id="slot" class="muted"></span></div><span id="price-level" class="heat-label"></span><div class="price"><strong id="price" data-heat="missing">—</strong><span>snt<br>/ kWh</span></div><p id="comparison">Ajantasainen varttihinta</p></div>
+<div class="next"><div class="eyebrow">SEURAAVA VARTTI <span id="next-time" class="muted"></span></div><span id="next-level" class="heat-label"></span><div class="secondary-price"><strong id="next" data-heat="missing">—</strong><span>snt / kWh</span></div><p id="next-change">Odotetaan hintatietoja</p></div>
+</section>
+<section class="chart-section" aria-label="Päivän hintakehitys">
+<div class="chart-heading"><h1>Sähkön hinta</h1><div class="tabs" role="group" aria-label="Valitse päivä"><button id="upcoming" class="active" aria-pressed="true">Seuraavat 24 h</button><button id="today" aria-pressed="false">Tänään</button><button id="tomorrow" aria-pressed="false">Huomenna</button></div></div>
+<div class="chart-meta"><span id="chart-label">2 tunnin keskihinnat · snt / kWh</span><span><span id="selection">Avaa varttihinnat napauttamalla 2 h jaksoa</span></span></div>
+<div class="coverage-row"><span id="coverage" role="status"></span><button id="back" hidden>← Koko päivä</button></div>
+<div class="heat-key"><span>Hintavärit · snt/kWh</span><div id="price-legend" class="price-legend" aria-label="Hintavärien kiinteät rajat"></div><small>Reunus = nykyinen jakso · Värit perustuvat näytettyyn keskihintaan</small></div>
+<div id="chart" class="chart"><p>Haetaan päivän hintoja…</p></div>
+<div class="stats"><div><span id="average-label">PÄIVÄN KESKIHINTA</span><strong id="average" data-heat="missing">—</strong></div><div><span>HALVIN JULKAISTU 2 H <small id="low-time"></small></span><strong id="low" data-heat="missing">—</strong></div><div><span>KALLEIN JULKAISTU 2 H <small id="high-time"></small></span><strong id="high" data-heat="missing">—</strong></div></div>
+</section>
+<section class="planner" aria-labelledby="planner-heading">
+<div class="planner-title"><h2 id="planner-heading">Milloin kannattaa käyttää sähköä?</h2><span>Vahvistetut hinnat</span></div>
+<div class="appliances" role="group" aria-label="Valitse laite"><button data-hours="3" aria-pressed="true" class="active">Astianpesukone</button><button data-hours="2" aria-pressed="false">Pyykinpesukone</button><button data-hours="1.5" aria-pressed="false">Sauna</button></div>
+<div class="planner-settings"><label>Ohjelman kesto<select id="duration"><option value="0.5">30 min</option><option value="1">1 h</option><option value="1.5">1,5 h</option><option value="2">2 h</option><option value="2.5">2,5 h</option><option value="3" selected>3 h</option><option value="3.5">3,5 h</option><option value="4">4 h</option><option value="5">5 h</option><option value="6">6 h</option></select></label><label>Sallitut käyttöajat<select id="allowed"><option value="0,1440">Koko vuorokausi</option><option value="420,1320" selected>Klo 07–22</option><option value="960,1320">Klo 16–22</option><option value="1320,420">Klo 22–07</option></select></label></div>
+<p id="planner-note">Valitse ohjelmasi todellinen kesto. Etsitään halvinta kokonaista jaksoa.</p>
+<div id="recommendation" role="status"></div><ol id="alternatives"></ol>
+<p class="planner-footnote">Vertailu perustuu jakson keskihintaan ja tasaiseen kulutukseen. Laitteen lämmitysvaiheet voivat muuttaa todellista säästöä. Ei automaattista käynnistystä.</p>
+</section>
+<section class="forecast-section" aria-labelledby="forecast-heading"><div class="planner-title"><h2 id="forecast-heading">Hintanäkymä · seuraavat 7 päivää</h2><span class="forecast-badge">ENNUSTE</span></div><p>Samat hintavärit kuin yllä, katkoviivoitetut palkit = ennuste. Arvioituja tuntihintoja, eivät vahvistettuja pörssihintoja. Avaa päivä nähdäksesi tuntiennusteet.</p><p id="forecast-status" role="status">Haetaan ennustetta…</p><aside id="forecast-commentary" hidden><h3 id="forecast-commentary-heading">Yhteenveto ennusteesta</h3><p id="forecast-commentary-text"></p><small id="forecast-commentary-note"></small></aside><div id="forecast-days"></div><details class="accuracy"><summary>Kuinka hyvin ennuste osuu?</summary><p id="accuracy-status" role="status">Kerätään vertailuhistoriaa.</p><div class="accuracy-scroll"><table><caption>Ennen hintojen julkaisua tallennetut ennusteet vs. vahvistetut tuntikeskihinnat</caption><thead><tr><th scope="col">Ennustettu etukäteen</th><th scope="col">Keskivirhe</th><th scope="col">Suunta</th><th scope="col">Vertailupisteitä</th></tr></thead><tbody id="accuracy-rows"></tbody></table></div><p>Keskivirhe = keskimääräinen poikkeama snt/kWh. Suunta: + yliarvio, − aliarvio. Sama tunti voi olla mukana eri ennustekerroilla. Ennustetta ei jälkikäteen korvata uudella.</p></details><p><span id="forecast-origin">Tuntiennuste: </span><a href="https://github.com/vividfog/nordpool-predict-fi" target="_blank" rel="noreferrer">Sähkövatkain / vividfog ↗</a> · ALV mukana · Ennustetta ei käytetä laitteen aloitussuositukseen.</p></section>
+<section class="grid-section" aria-label="Suomen sähköjärjestelmä">
+<div class="grid-heading"><h2>Suomen sähköverkko nyt</h2><span id="grid-status" role="status">Haetaan Fingridistä…</span></div>
+<div class="grid-readings"><div><span>KULUTUS</span><strong id="grid-consumption">—</strong></div><div><span>TUOTANTO</span><strong id="grid-production">—</strong></div><div><span>TUULIVOIMA</span><strong id="grid-wind">—</strong></div></div>
+<p>Teho megawatteina · <a href="https://data.fingrid.fi" target="_blank" rel="noreferrer">Lähde: Fingrid avoin data ↗</a></p>
+</section>
+<footer><span>ALV 25,5 % sisältyy · Ei siirtoa, sähköveroa tai marginaalia</span><span><a href="https://github.com/tonibergholm/wattinfo" target="_blank" rel="noreferrer" aria-label="WattInfo lähdekoodi GitHubissa">GitHub ↗</a> · <a href="https://porssisahko.net" target="_blank" rel="noreferrer">Porssisahko.net ↗</a> <span id="updated"></span> <button id="refresh" aria-label="Päivitä hinnat">↻</button></span></footer>
+</main><script type="module" src="./app.js"></script>
+</body></html>

@@ -1,0 +1,19 @@
+# CPU-only runtime for nordpool-predict-fi; upstream versions, no neural network or dev tools.
+numpy==1.26.4
+pandas==2.2.0
+scipy==1.13.0
+scikit-learn==1.5.2
+xgboost-cpu==3.0.5
+umap-learn==0.5.6
+matplotlib==3.8.2
+seaborn==0.13.2
+statsmodels==0.14.1
+requests==2.32.5
+lxml==5.1.0
+pytz==2024.1
+python-dotenv==0.21.1
+rich==12.5.1
+entsoe-py==0.6.7
+openai==2.3.0
+pytest==8.3.2
+pytest-xdist==3.8.0
