@@ -17,10 +17,11 @@ async function prices() {
   })().finally(() => { pending = null; });
   return pending;
 }
-const files = { '/': ['index.html', 'text/html'], '/style.css': ['style.css', 'text/css'], '/app.js': ['app.js', 'text/javascript'], '/prices.js': ['prices.js', 'text/javascript'], '/planner.js': ['planner.js', 'text/javascript'] };
+const files = { '/': ['index.html', 'text/html'], '/style.css': ['style.css', 'text/css'], '/app.js': ['app.js', 'text/javascript'], '/prices.js': ['prices.js', 'text/javascript'], '/planner.js': ['planner.js', 'text/javascript'], '/refresh.js': ['refresh.js', 'text/javascript'] };
 const server = http.createServer(async (req, res) => {
   try {
     const path = new URL(req.url, 'http://localhost').pathname;
+    if (path.startsWith('/api/')) res.setHeader('Cache-Control', 'no-store');
     if (path === '/api/accuracy') {
       res.setHeader('Content-Type', 'application/json');
       try { res.end(await readFile(new URL('./forecast-accuracy.json', import.meta.url), 'utf8')); }

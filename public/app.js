@@ -1,8 +1,9 @@
+import { setupRefresh } from './refresh.js';
 import { planUsage, rangeBlocks } from './planner.js';
 import { time, dayKey, average, dayBounds, dayBlocks, priceHeat, PRICE_BANDS } from './prices.js';
 const $ = id => document.getElementById(id);
 const number = value => value == null ? '—' : value.toLocaleString('fi-FI', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-let data = null, selectedDay = 2, selectedSlot = null, detailStart = null, loading = false, failed = false;
+let data = null, selectedDay = 2, selectedSlot = null, detailStart = null, failed = false, chartVersion = '';
 const range = p => `${time(p.start)}–${time(p.end)}`;
 function colorPrice(node, value) {
   const heat = priceHeat(value);
@@ -36,7 +37,7 @@ function render() {
   $('next-time').textContent = next ? range(next) : '';
   $('next-change').textContent = next ? `${next.price > current.price ? '↗ Nousee' : '↘ Laskee'} ${number(Math.abs(next.price - current.price))} snt / kWh` : 'Seuraavaa hintaa ei ole julkaistu';
   const stale = failed || data.stale || now - data.fetchedAt > 900_000 || !current;
-  $('status').textContent = stale ? 'Yhteyskatko / vanhentunut tieto' : 'Ajantasainen';
+  $('status').textContent = `${stale ? 'Yhteyskatko / vanhentunut tieto' : 'Ajantasainen'} · autom. 5 min`;
   $('status').className = stale ? '' : 'live';
   $('updated').textContent = `Haku ${time(data.fetchedAt)}`;
   // Noon UTC stays on the next Finnish calendar day across DST changes.
@@ -73,13 +74,17 @@ function select(p) {
 }
 function drawChart(rows, now, bounds, detail) {
   const chart = $('chart');
+  const width = chart.clientWidth || 960, height = Math.max(110, chart.clientHeight);
+  const version = JSON.stringify([rows, bounds, detail, selectedDay, width, height, Math.floor(now / 900_000)]);
+  if (version === chartVersion) return;
+  chartVersion = version;
+  const focused = chart.contains(document.activeElement) ? document.activeElement.dataset.start : null;
   chart.replaceChildren();
   colorPrice($('selection'), null);
   $('selection').textContent = detail ? 'Valitse vartti nähdäksesi hinnan' : 'Avaa varttihinnat napauttamalla 2 h jaksoa';
   if (!rows.length) { const p = document.createElement('p'); p.textContent = 'Tälle jaksolle ei ole vielä julkaistu hintoja.'; chart.append(p); return; }
   const NS = 'http://www.w3.org/2000/svg';
   function el(tag, attrs, text, parent) { const node = document.createElementNS(NS, tag); for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value); if (text != null) node.textContent = text; parent.append(node); return node; }
-  const width = chart.clientWidth || 960, height = Math.max(110, chart.clientHeight);
   const svg = el('svg', { viewBox: `0 0 ${width} ${height}`, role: 'group', 'aria-label': detail ? '15 minuutin hinnat' : 'Koko päivän kahden tunnin keskihinnat' }, null, chart);
   const min = Math.min(0, ...rows.filter(p => p.price != null).map(p => p.price)), max = Math.max(1, ...rows.filter(p => p.price != null).map(p => p.price));
   const span = max - min, y = v => height - 28 - (v - min) / span * (height - 40);
@@ -103,7 +108,7 @@ function drawChart(rows, now, bounds, detail) {
     }
     const active = p.start <= now && now < p.end;
     if (p.price != null) el('rect', { x: x(p.start), y: Math.min(y(p.price), y(0)), width: Math.max(1, x(p.end) - x(p.start) - 2), height: Math.max(1.5, Math.abs(y(p.price) - y(0))), rx: 1, 'data-heat': priceHeat(p.price).tone, class: `bar ${p.end <= now ? 'past' : ''} ${active ? 'now' : ''}`, 'aria-hidden': 'true' }, null, svg);
-    const hit = el('rect', { x: x(p.start), y: 0, width: x(p.end) - x(p.start), height: height - 25, fill: 'transparent', tabindex: 0, role: 'button', 'aria-label': p.price == null ? `${range(p)}, puuttuvat tai osittaiset hinnat` : `${range(p)}, ${number(p.price)} snt / kWh, ${priceHeat(p.price).label}${detail ? '' : ' keskimäärin, avaa varttihinnat'}` }, null, svg);
+    const hit = el('rect', { x: x(p.start), y: 0, width: x(p.end) - x(p.start), height: height - 25, fill: 'transparent', tabindex: 0, role: 'button', 'data-start': p.start, 'aria-label': p.price == null ? `${range(p)}, puuttuvat tai osittaiset hinnat` : `${range(p)}, ${number(p.price)} snt / kWh, ${priceHeat(p.price).label}${detail ? '' : ' keskimäärin, avaa varttihinnat'}` }, null, svg);
     const inspect = () => { if (p.price == null) { colorPrice($('selection'), null); $('selection').textContent = `${range(p)} · hinnat puuttuvat tai ovat osittaiset`; } else select(p); };
     const open = () => { if (!detail) { detailStart = p.start; selectedSlot = null; render(); $('back').focus(); } else inspect(); };
     hit.addEventListener('pointerenter', inspect); hit.addEventListener('click', open); hit.addEventListener('focus', inspect);
@@ -114,30 +119,27 @@ function drawChart(rows, now, bounds, detail) {
 
     if (selectedSlot === p.start && p.price != null) select(p);
   });
+  if (focused) chart.querySelector(`[data-start="${focused}"]`)?.focus({ preventScroll: true });
 }
 async function refresh() {
-  if (loading) return;
-  loading = true; $('refresh').disabled = true;
   try {
-    const response = await fetch('./api/prices', { signal: AbortSignal.timeout(15_000) });
+    const response = await fetch('./api/prices', { cache: 'no-store', signal: AbortSignal.timeout(15_000) });
     if (!response.ok) throw new Error('Price request failed');
     const result = await response.json();
     if (!Array.isArray(result.prices) || !Number.isFinite(result.fetchedAt)) throw new Error('Invalid response');
     data = result; failed = false;
-  } catch { failed = true; $('status').textContent = 'Yhteyskatko · yritetään uudelleen'; if (!data) $('chart').textContent = 'Hintojen haku epäonnistui. Tarkista verkkoyhteys tai yritä päivittää.'; }
-  finally { loading = false; $('refresh').disabled = false; render(); }
+    return !result.stale;
+  } catch { failed = true; $('status').textContent = 'Yhteyskatko · yritetään uudelleen'; if (!data) $('chart').textContent = 'Hintojen haku epäonnistui. Tarkista verkkoyhteys tai yritä päivittää.'; return false; }
+  finally { render(); }
 }
 $('upcoming').onclick = () => { selectedDay = 2; selectedSlot = null; detailStart = null; render(); };
 $('today').onclick = () => { selectedDay = 0; selectedSlot = null; detailStart = null; render(); };
 $('tomorrow').onclick = () => { selectedDay = 1; selectedSlot = null; detailStart = null; render(); };
 $('back').onclick = () => { detailStart = null; selectedSlot = null; render(); };
-$('refresh').onclick = refresh;
-setInterval(refresh, 300_000);
 setInterval(render, 30_000);
-document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
-render(); refresh();
 
-let gridData = null, gridLoading = false, gridFailed = false;
+
+let gridData = null, gridFailed = false;
 function renderGrid() {
   const names = ['consumption', 'production', 'wind'];
   for (const name of names) {
@@ -147,21 +149,18 @@ function renderGrid() {
   $('grid-status').textContent = gridData ? `${gridFailed || gridData.stale || Date.now() - oldest > 900_000 ? 'Vanhentunut tieto · ' : ''}Mittaus ${time(oldest)}` : gridFailed ? 'Fingrid ei ole saatavilla' : 'Haetaan Fingridistä…';
 }
 async function refreshGrid() {
-  if (gridLoading) return;
-  gridLoading = true;
   try {
-    const response = await fetch('./api/grid', { signal: AbortSignal.timeout(45_000) });
+    const response = await fetch('./api/grid', { cache: 'no-store', signal: AbortSignal.timeout(45_000) });
     if (!response.ok) throw new Error('Grid unavailable');
     const result = await response.json();
     if (!['consumption', 'production', 'wind'].every(name => Number.isFinite(result[name]?.value) && Number.isFinite(result[name]?.timestamp))) throw new Error('Invalid grid data');
     gridData = result; gridFailed = false;
-  } catch { gridFailed = true; }
-  finally { gridLoading = false; renderGrid(); }
+    return !result.stale;
+  } catch { gridFailed = true; return false; }
+  finally { renderGrid(); }
 }
-setInterval(refreshGrid, 300_000);
 setInterval(renderGrid, 30_000);
-document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshGrid(); });
-refreshGrid();
+
 
 function datedRange(p) {
   const date = t => new Intl.DateTimeFormat('fi-FI', { timeZone: 'Europe/Helsinki', weekday: 'short', day: 'numeric', month: 'numeric' }).format(t);
@@ -196,12 +195,11 @@ for (const button of document.querySelectorAll('.appliances button')) {
   };
 }
 $('duration').onchange = render; $('allowed').onchange = render;
-let forecastData = null, forecastLoading = false, forecastFailed = false;
+let forecastData = null, forecastFailed = false, forecastVersion = '';
 function renderForecast() {
   const container = $('forecast-days');
   // Keep an open day's hour list open across the 30-second clock update.
   const openDays = new Set([...container.querySelectorAll('details[open]')].map(d => d.dataset.day));
-  container.replaceChildren();
   if (!forecastData) { $('forecast-status').textContent = forecastFailed ? 'Ennuste ei ole saatavilla. Vahvistetut hinnat toimivat erikseen.' : 'Haetaan ennustetta…'; return; }
   const now = Date.now();
   $('forecast-origin').textContent = forecastData.source === 'selfhosted' ? 'Omalla palvelimella laskettu · Malli: ' : 'Tuntiennuste: ';
@@ -214,7 +212,12 @@ function renderForecast() {
   const stale = forecastFailed || forecastData.stale || (modified && now - modified > 86_400_000) || now - forecastData.fetchedAt > 7_200_000;
   $('forecast-status').textContent = `${stale ? 'Vanhentunut / yhteyskatko · ' : ''}${modified ? 'Lähdetiedosto ' + new Date(modified).toLocaleString('fi-FI', { timeZone: 'Europe/Helsinki' }) : 'Lähteen päivitysaika ei tiedossa'} · Haku ${time(forecastData.fetchedAt)}`;
   const future = forecastData.prices.filter(p => p.end > now && p.start < now + 7 * 86_400_000);
-  if (!future.length) { $('forecast-status').textContent = 'Ennuste on päättynyt. Odotetaan lähteen päivitystä.'; return; }
+  if (!future.length) { container.replaceChildren(); forecastVersion = ''; $('forecast-status').textContent = 'Ennuste on päättynyt. Odotetaan lähteen päivitystä.'; return; }
+  const version = JSON.stringify(future);
+  if (version === forecastVersion) return;
+  forecastVersion = version;
+  const focused = container.contains(document.activeElement) ? document.activeElement.closest('details')?.dataset.day : null;
+  container.replaceChildren();
   const days = new Map();
   for (const p of future) { const key = dayKey(p.start); if (!days.has(key)) days.set(key, []); days.get(key).push(p); }
   const scale = Math.max(1, ...future.map(p => Math.abs(p.price)));
@@ -232,32 +235,36 @@ function renderForecast() {
     for (const p of rows) { const li = document.createElement('li'); colorPrice(li, p.price); li.textContent = `${range(p)} · ≈ ${number(p.price)} snt/kWh`; li.setAttribute('aria-label', `${li.textContent}, ${priceHeat(p.price).label}`); list.append(li); }
     details.append(list); container.append(details);
   }
+  if (focused) container.querySelector(`details[data-day="${focused}"] summary`)?.focus({ preventScroll: true });
 }
 async function refreshForecast() {
-  if (forecastLoading) return; forecastLoading = true;
   try {
-    const response = await fetch('./api/forecast', { signal: AbortSignal.timeout(15_000) });
+    const response = await fetch('./api/forecast', { cache: 'no-store', signal: AbortSignal.timeout(15_000) });
     if (!response.ok) throw new Error('Forecast unavailable');
     const result = await response.json();
     if (!Array.isArray(result.prices) || !result.prices.every(p => Number.isFinite(p.start) && Number.isFinite(p.end) && Number.isFinite(p.price))) throw new Error('Invalid forecast');
     forecastData = result; forecastFailed = false;
-  } catch { forecastFailed = true; }
-  finally { forecastLoading = false; renderForecast(); }
+    return !result.stale;
+  } catch { forecastFailed = true; return false; }
+  finally { renderForecast(); }
 }
-setInterval(refreshForecast, 300_000);
 setInterval(renderForecast, 30_000);
-document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshForecast(); });
-refreshForecast();
+
 window.addEventListener('resize', render);
 
+let accuracyVersion = '';
 async function refreshAccuracy() {
   try {
-    const response = await fetch('./api/accuracy', { signal: AbortSignal.timeout(10_000) });
+    const response = await fetch('./api/accuracy', { cache: 'no-store', signal: AbortSignal.timeout(10_000) });
     if (!response.ok) throw new Error('Accuracy unavailable');
     const report = await response.json();
-    const rows = $('accuracy-rows'); rows.replaceChildren();
+    if (!Array.isArray(report.buckets)) throw new Error('Invalid accuracy data');
+    const rows = $('accuracy-rows');
     const samples = report.buckets.reduce((n, b) => n + b.count, 0);
     $('accuracy-status').textContent = report.startedAt ? `Seuranta aloitettu ${new Date(report.startedAt).toLocaleString('fi-FI', {timeZone:'Europe/Helsinki'})}. ${samples ? 'Vertailu päivittyy ennusteajon yhteydessä.' : 'Ei vielä vertailtavia hintoja. Tulokset kertyvät hintojen julkaisun jälkeen.'}` : 'Kerätään vertailuhistoriaa. Tulokset näkyvät hintojen julkaisun jälkeen.';
+    const version = JSON.stringify(report.buckets);
+    if (version === accuracyVersion) return true;
+    accuracyVersion = version; rows.replaceChildren();
     for (const b of report.buckets) {
       const tr = document.createElement('tr');
       for (const value of [b.label, b.mae == null ? '—' : number(b.mae), b.bias == null ? '—' : (b.bias > 0 ? '+' : '') + number(b.bias), `${b.count} (${b.hours} eri tuntia)`]) {
@@ -265,8 +272,8 @@ async function refreshAccuracy() {
       }
       rows.append(tr);
     }
-  } catch { $('accuracy-status').textContent = 'Vertailuhistoria ei ole nyt saatavilla.'; }
+    return true;
+  } catch { $('accuracy-status').textContent = 'Vertailuhistoria ei ole nyt saatavilla.'; return false; }
 }
-setInterval(refreshAccuracy, 300_000);
-document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshAccuracy(); });
-refreshAccuracy();
+render();
+setupRefresh([refresh, refreshGrid, refreshForecast, refreshAccuracy]);

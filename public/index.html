@@ -2,8 +2,9 @@
 <html lang="fi">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#141916"><meta name="apple-mobile-web-app-capable" content="yes"><title>WattInfo · Pörssisähkö</title><link rel="stylesheet" href="./style.css"></head>
 <body>
+<div id="pull-refresh" class="pull-refresh" role="status" aria-live="polite"><span id="pull-icon" class="pull-icon" aria-hidden="true">↓</span><span id="pull-message"></span></div>
 <main>
-<header><a class="brand" href="./" aria-label="WattInfo etusivu"><span class="mark">ϟ</span> wattinfo<span class="brand-dot">.</span></a><div class="clock"><span id="date"></span><strong id="clock">--:--</strong></div></header>
+<header><a class="brand" href="./" aria-label="WattInfo etusivu"><span class="mark">ϟ</span> wattinfo<span class="brand-dot">.</span></a><div class="clock"><span id="date"></span><strong id="clock">--:--</strong><button id="refresh" class="refresh-button" aria-label="Päivitä kaikki tiedot" title="Päivitä tiedot · automaattisesti 5 min välein"><span class="refresh-icon" aria-hidden="true">↻</span><span class="refresh-label">Päivitä</span></button></div></header>
 <div class="topline"><span>PÖRSSISÄHKÖ <span class="muted">/ SUOMI</span></span><span id="status" role="status">Haetaan hintoja…</span></div>
 <section class="overview" aria-label="Nykyinen sähkön hinta">
 <div class="current"><div class="eyebrow">HINTA NYT <span id="slot" class="muted"></span></div><span id="price-level" class="heat-label"></span><div class="price"><strong id="price" data-heat="missing">—</strong><span>snt<br>/ kWh</span></div><p id="comparison">Ajantasainen varttihinta</p></div>
@@ -31,6 +32,6 @@
 <div class="grid-readings"><div><span>KULUTUS</span><strong id="grid-consumption">—</strong></div><div><span>TUOTANTO</span><strong id="grid-production">—</strong></div><div><span>TUULIVOIMA</span><strong id="grid-wind">—</strong></div></div>
 <p>Teho megawatteina · <a href="https://data.fingrid.fi" target="_blank" rel="noreferrer">Lähde: Fingrid avoin data ↗</a></p>
 </section>
-<footer><span>ALV 25,5 % sisältyy · Ei siirtoa, sähköveroa tai marginaalia</span><span><a href="https://github.com/tonibergholm/wattinfo" target="_blank" rel="noreferrer" aria-label="WattInfo lähdekoodi GitHubissa">GitHub ↗</a> · <a href="https://porssisahko.net" target="_blank" rel="noreferrer">Porssisahko.net ↗</a> <span id="updated"></span> <button id="refresh" aria-label="Päivitä hinnat">↻</button></span></footer>
+<footer><span>ALV 25,5 % sisältyy · Ei siirtoa, sähköveroa tai marginaalia</span><span><a href="https://github.com/tonibergholm/wattinfo" target="_blank" rel="noreferrer" aria-label="WattInfo lähdekoodi GitHubissa">GitHub ↗</a> · <a href="https://porssisahko.net" target="_blank" rel="noreferrer">Porssisahko.net ↗</a> <span id="updated"></span></span></footer>
 </main><script type="module" src="./app.js"></script>
 </body></html>

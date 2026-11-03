@@ -85,3 +85,14 @@ The self-hosted engine retrains every six hours on refreshed input data. A separ
 ## Price heat colours
 
 Current/next prices, published chart bars (including quarter-hour detail), daily statistics, planner windows and forecast prices use one fixed VAT-inclusive snt/kWh scale: blue below 0, green from 0 to below 5, yellow from 5 to below 10, orange from 10 to below 20, and red from 20 upward. These are display bands, not official market classifications. Colours never rescale to the day's minimum/maximum. The legend and numeric prices remain visible; the current chart interval has a white outline and missing intervals remain neutral/hatched. Forecast bars retain their segmented pattern and estimate labels. Aggregate colours refer to the displayed average, so inspect individual intervals for price spikes within a block or day.
+
+
+## Refreshing the dashboard
+
+Tap **Päivitä** in the header (the refresh icon on narrow screens), or pull down from the top of the page and release when **Vapauta päivittääksesi** appears. Pulling while scrolled down, swiping sideways, or touching form controls does not trigger refresh.
+
+All four data sources refresh together every five minutes while the page is visible. Returning from the background, restoring the page from browser history or regaining connectivity also checks the data. iPadOS can suspend webapps in the background; the app refreshes on return rather than relying on background timers.
+
+Updates fetch JSON only; they do not reload the document, scripts or styles. Selected chart views, appliance settings and expanded forecast days remain in place. Unchanged chart and forecast data keeps the existing DOM nodes to avoid flicker and lost focus. A failed source keeps its previous readings and reports the failure. Manual requests share an in-flight update instead of duplicating it, and server-side caching still applies.
+
+The custom pull gesture targets modern touch browsers; the header button is also available for keyboard users and devices without touch. Test the installed home-screen webapp on your own iPad/iPadOS version.
