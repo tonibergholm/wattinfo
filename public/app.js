@@ -1,6 +1,6 @@
 import { setupRefresh } from './refresh.js';
 import { planUsage, rangeBlocks } from './planner.js';
-import { time, dayKey, average, dayBounds, dayBlocks, priceHeat, PRICE_BANDS } from './prices.js';
+import { time, dayKey, average, unconfirmedForecast, dayBounds, dayBlocks, priceHeat, PRICE_BANDS } from './prices.js';
 const $ = id => document.getElementById(id);
 const number = value => value == null ? '—' : value.toLocaleString('fi-FI', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 let data = null, selectedDay = 2, selectedSlot = null, detailStart = null, failed = false, chartVersion = '';
@@ -130,7 +130,7 @@ async function refresh() {
     data = result; failed = false;
     return !result.stale;
   } catch { failed = true; $('status').textContent = 'Yhteyskatko · yritetään uudelleen'; if (!data) $('chart').textContent = 'Hintojen haku epäonnistui. Tarkista verkkoyhteys tai yritä päivittää.'; return false; }
-  finally { render(); }
+  finally { render(); renderForecast(); }
 }
 $('upcoming').onclick = () => { selectedDay = 2; selectedSlot = null; detailStart = null; render(); };
 $('today').onclick = () => { selectedDay = 0; selectedSlot = null; detailStart = null; render(); };
@@ -203,7 +203,8 @@ function renderForecast() {
   if (!forecastData) { $('forecast-status').textContent = forecastFailed ? 'Ennuste ei ole saatavilla. Vahvistetut hinnat toimivat erikseen.' : 'Haetaan ennustetta…'; return; }
   const now = Date.now();
   $('forecast-origin').textContent = forecastData.source === 'selfhosted' ? 'Omalla palvelimella laskettu · Malli: ' : 'Tuntiennuste: ';
-  $('forecast-commentary').hidden = !forecastData.narration;
+  const unconfirmed = unconfirmedForecast(forecastData.prices, data?.prices || []);
+  $('forecast-commentary').hidden = !forecastData.narration || unconfirmed.length !== forecastData.prices.length;
   $('forecast-commentary-text').textContent = forecastData.narration?.text || '';
   const aiSummary = forecastData.narration?.generatedBy === 'ollama';
   $('forecast-commentary-heading').textContent = aiSummary ? 'AI-yhteenveto · paikallinen Ollama' : 'Yhteenveto ennusteesta';
@@ -211,8 +212,8 @@ function renderForecast() {
   const modified = forecastData.sourceModifiedAt;
   const stale = forecastFailed || forecastData.stale || (modified && now - modified > 86_400_000) || now - forecastData.fetchedAt > 7_200_000;
   $('forecast-status').textContent = `${stale ? 'Vanhentunut / yhteyskatko · ' : ''}${modified ? 'Lähdetiedosto ' + new Date(modified).toLocaleString('fi-FI', { timeZone: 'Europe/Helsinki' }) : 'Lähteen päivitysaika ei tiedossa'} · Haku ${time(forecastData.fetchedAt)}`;
-  const future = forecastData.prices.filter(p => p.end > now && p.start < now + 7 * 86_400_000);
-  if (!future.length) { container.replaceChildren(); forecastVersion = ''; $('forecast-status').textContent = 'Ennuste on päättynyt. Odotetaan lähteen päivitystä.'; return; }
+  const future = unconfirmed.filter(p => p.end > now && p.start < now + 7 * 86_400_000);
+  if (!future.length) { container.replaceChildren(); forecastVersion = ''; $('forecast-status').textContent = 'Ei julkaisemattomien hintojen ennustetta. Odotetaan lähteen päivitystä.'; return; }
   const version = JSON.stringify(future);
   if (version === forecastVersion) return;
   forecastVersion = version;
