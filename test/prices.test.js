@@ -57,3 +57,14 @@ test('price heat uses fixed thresholds, including negative, boundary and missing
     assert(priceHeat(price).label);
   }
 });
+
+test('confirmed prices replace overlapping forecast hours, including partial publication', async () => {
+  const { unconfirmedForecast } = await import('../public/prices.js');
+  const start = Date.parse('2026-11-03T22:00Z'); // Finnish midnight
+  const forecast = Array.from({ length: 72 }, (_, i) => ({ start: start + i * 3_600_000, end: start + (i + 1) * 3_600_000, price: 2 }));
+  const confirmed = Array.from({ length: 192 }, (_, i) => ({ start: start + i * quarter, end: start + (i + 1) * quarter, price: 1 }));
+  assert.deepEqual(unconfirmedForecast(forecast, []), forecast);
+  assert.deepEqual(unconfirmedForecast(forecast, confirmed), forecast.slice(48));
+  assert.deepEqual(unconfirmedForecast(forecast, confirmed.slice(0, 1)), forecast.slice(1));
+  assert.deepEqual(unconfirmedForecast(forecast, [...confirmed, { start: forecast[48].end, end: forecast[49].end, price: 1 }]), [forecast[48], ...forecast.slice(50)]);
+});

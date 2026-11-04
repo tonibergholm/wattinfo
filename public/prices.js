@@ -67,3 +67,7 @@ const noPrice = { tone: 'missing', label: 'Ei hintaa' };
 export function priceHeat(price) {
   return Number.isFinite(price) ? PRICE_BANDS.find(band => price < band.max) : noPrice;
 }
+
+export function unconfirmedForecast(forecast, confirmed) {
+  return forecast.filter(p => !confirmed.some(actual => actual.start < p.end && actual.end > p.start));
+}
