@@ -1,6 +1,6 @@
 import { setupRefresh } from './refresh.js';
 import { planUsage, rangeBlocks } from './planner.js';
-import { time, dayKey, average, unconfirmedForecast, dayBounds, dayBlocks, priceHeat, PRICE_BANDS } from './prices.js';
+import { time, dayKey, average, unconfirmedForecast, dayBounds, dayBlocks, priceHeat, PRICE_BANDS, niceTicks } from './prices.js';
 const $ = id => document.getElementById(id);
 const number = value => value == null ? '—' : value.toLocaleString('fi-FI', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 let data = null, selectedDay = 2, selectedSlot = null, detailStart = null, failed = false, chartVersion = '';
@@ -87,11 +87,10 @@ function drawChart(rows, now, bounds, detail) {
   function el(tag, attrs, text, parent) { const node = document.createElementNS(NS, tag); for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value); if (text != null) node.textContent = text; parent.append(node); return node; }
   const svg = el('svg', { viewBox: `0 0 ${width} ${height}`, role: 'group', 'aria-label': detail ? '15 minuutin hinnat' : 'Koko päivän kahden tunnin keskihinnat' }, null, chart);
   const min = Math.min(0, ...rows.filter(p => p.price != null).map(p => p.price)), max = Math.max(1, ...rows.filter(p => p.price != null).map(p => p.price));
-  const span = max - min, y = v => height - 28 - (v - min) / span * (height - 40);
-  for (let i = 0; i <= 3; i++) {
-    const v = min + span * i / 3;
+  const { ticks, decimals } = niceTicks(min, max), lo = ticks[0], span = ticks.at(-1) - lo, y = v => height - 28 - (v - lo) / span * (height - 40);
+  for (const v of ticks) {
     el('line', { x1: 34, x2: width - 4, y1: y(v), y2: y(v), class: 'gridline' }, null, svg);
-    el('text', { x: 26, y: y(v) + 3, 'text-anchor': 'end', class: 'axis' }, (max <= 1 && min >= 0 ? v.toFixed(1) : v.toFixed(0)), svg);
+    el('text', { x: 26, y: y(v) + 3, 'text-anchor': 'end', class: 'axis' }, v.toLocaleString('fi-FI', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }), svg);
   }
   const { start, end } = bounds, x = t => 36 + (t - start) / (end - start) * (width - 40);
   const defs = el('defs', {}, null, svg);

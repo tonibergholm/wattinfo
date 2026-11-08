@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parsePrices, average, cheapestWindow, dayKey, time } from '../public/prices.js';
+import { parsePrices, average, cheapestWindow, dayKey, time, niceTicks } from '../public/prices.js';
 const quarter = 900_000;
 const rows = Array.from({ length: 12 }, (_, i) => ({ start: i * quarter, end: (i + 1) * quarter, price: i < 4 ? 10 : -2 }));
 test('cheapest future contiguous two hours supports negative prices', () => {
@@ -67,4 +67,10 @@ test('confirmed prices replace overlapping forecast hours, including partial pub
   assert.deepEqual(unconfirmedForecast(forecast, confirmed), forecast.slice(48));
   assert.deepEqual(unconfirmedForecast(forecast, confirmed.slice(0, 1)), forecast.slice(1));
   assert.deepEqual(unconfirmedForecast(forecast, [...confirmed, { start: forecast[48].end, end: forecast[49].end, price: 1 }]), [forecast[48], ...forecast.slice(50)]);
+});
+test('niceTicks gives distinct round ticks covering the range', () => {
+  assert.deepEqual(niceTicks(0, 1.99), { ticks: [0, 0.5, 1, 1.5, 2], decimals: 1 });
+  assert.deepEqual(niceTicks(0, 1), { ticks: [0, 0.5, 1], decimals: 1 });
+  assert.deepEqual(niceTicks(0, 23.4), { ticks: [0, 10, 20, 30], decimals: 0 });
+  assert.deepEqual(niceTicks(-3.2, 12), { ticks: [-5, 0, 5, 10, 15], decimals: 0 });
 });
