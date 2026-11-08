@@ -96,3 +96,12 @@ All four data sources refresh together every five minutes while the page is visi
 Updates fetch JSON only; they do not reload the document, scripts or styles. Selected chart views, appliance settings and expanded forecast days remain in place. Unchanged chart and forecast data keeps the existing DOM nodes to avoid flicker and lost focus. A failed source keeps its previous readings and reports the failure. Manual requests share an in-flight update instead of duplicating it, and server-side caching still applies.
 
 The custom pull gesture targets modern touch browsers; the header button is also available for keyboard users and devices without touch. Test the installed home-screen webapp on your own iPad/iPadOS version.
+
+## License
+
+WattInfo's code is released under the [MIT License](LICENSE).
+
+Data and third-party code keep their own terms and are not covered by that license:
+
+- Prices come from [Porssisahko.net](https://porssisahko.net); grid readings come from [Fingrid](https://data.fingrid.fi). Check their terms before redistributing the data or running a public instance.
+- The forecast outlook uses [vividfog's nordpool-predict-fi](https://github.com/vividfog/nordpool-predict-fi) (MIT, Copyright (c) 2024 npf). `deploy/forecast-no-narration.patch` is a modification of that project. Its upstream data has noncommercial limits, described in [docs/forecast-source.md](docs/forecast-source.md#license-attribution-and-reliability).
