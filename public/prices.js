@@ -71,3 +71,11 @@ export function priceHeat(price) {
 export function unconfirmedForecast(forecast, confirmed) {
   return forecast.filter(p => !confirmed.some(actual => actual.start < p.end && actual.end > p.start));
 }
+// Round axis: step is 1, 2 or 5 × 10^k, aiming for ~4 intervals; ticks cover [lo, hi].
+export function niceTicks(lo, hi) {
+  const raw = Math.max(hi - lo, 1e-9) / 4, pow = 10 ** Math.floor(Math.log10(raw));
+  const step = [1, 2, 5, 10].map(m => m * pow).find(s => s >= raw - 1e-12);
+  const first = Math.floor(lo / step + 1e-9), last = Math.ceil(hi / step - 1e-9);
+  const ticks = Array.from({ length: last - first + 1 }, (_, i) => Math.round((first + i) * step * 1e6) / 1e6);
+  return { ticks, decimals: Math.max(0, -Math.floor(Math.log10(step) + 1e-9)) };
+}
